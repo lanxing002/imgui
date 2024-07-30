@@ -8,6 +8,7 @@
 // - Introduction, links and more at the top of imgui.cpp
 
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <stdio.h>
@@ -33,6 +34,177 @@ static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
+
+
+#include <array>
+
+class EditorUI
+{
+public:
+    EditorUI();
+
+    virtual void initialize();
+
+    virtual void render();
+
+private:
+    void showEditorMenu(bool* opended);
+    void showEditorWorldObjectsWindow(bool* opended);
+    void showEditorGameWindow(bool* opended);
+
+private:
+    bool m_editor_menu_window_open = true;
+    bool m_asset_window_open = true;
+    bool m_game_engine_window_open = true;
+    bool m_file_content_window_open = true;
+    //bool m_detail_window_open = true;
+    //bool m_scene_lights_window_open = true;
+    //bool m_scene_lights_data_window_open = true;
+};
+
+EditorUI::EditorUI()
+{
+}
+
+void EditorUI::initialize()
+{
+
+}
+
+void EditorUI::render()
+{
+    showEditorMenu(&m_editor_menu_window_open);
+    showEditorWorldObjectsWindow(&m_asset_window_open);
+    showEditorGameWindow(&m_game_engine_window_open);
+}
+
+void EditorUI::showEditorMenu(bool* opened)
+{
+    ImGuiDockNodeFlags dock_flags = ImGuiDockNodeFlags_DockSpace;
+    ImGuiWindowFlags   window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground |
+        ImGuiConfigFlags_NoMouseCursorChange | ImGuiWindowFlags_NoBringToFrontOnFocus;
+
+    const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(main_viewport->WorkPos, ImGuiCond_Always);
+    std::array<int, 2> window_size = { 100, 200 };
+    ImGui::SetNextWindowSize(ImVec2((float)window_size[0], (float)window_size[1]), ImGuiCond_Always);
+
+    ImGui::SetNextWindowViewport(main_viewport->ID);
+
+    ImGui::Begin("Editor menu", opened, window_flags);
+
+    ImGuiID main_docking_id = ImGui::GetID("Main Docking");
+    if (ImGui::DockBuilderGetNode(main_docking_id) == nullptr)
+    {
+        ImGui::DockBuilderRemoveNode(main_docking_id);
+
+        ImGui::DockBuilderAddNode(main_docking_id, dock_flags);
+        ImGui::DockBuilderSetNodePos(main_docking_id,
+            ImVec2(main_viewport->WorkPos.x, main_viewport->WorkPos.y + 18.0f));
+        ImGui::DockBuilderSetNodeSize(main_docking_id,
+            ImVec2((float)window_size[0], (float)window_size[1] - 18.0f));
+
+        ImGuiID center = main_docking_id;
+        ImGuiID left;
+        ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.25f, nullptr, &left);
+
+        ImGuiID left_other;
+        ImGuiID left_file_content = ImGui::DockBuilderSplitNode(left, ImGuiDir_Down, 0.30f, nullptr, &left_other);
+
+        ImGuiID left_game_engine;
+        ImGuiID left_asset =
+            ImGui::DockBuilderSplitNode(left_other, ImGuiDir_Left, 0.30f, nullptr, &left_game_engine);
+
+        ImGui::DockBuilderDockWindow("World Objects", left_asset);
+        ImGui::DockBuilderDockWindow("Components Details", right);
+        ImGui::DockBuilderDockWindow("File Content", left_file_content);
+        ImGui::DockBuilderDockWindow("Game Engine", left_game_engine);
+
+        ImGui::DockBuilderFinish(main_docking_id);
+    }
+
+    ImGui::DockSpace(main_docking_id);
+
+    if (ImGui::BeginMenuBar())
+    {
+        if (ImGui::BeginMenu("Menu"))
+        {
+            if (ImGui::MenuItem("Reload Current Level"))
+            {
+                //g_runtime_global_context.m_world_manager->reloadCurrentLevel();
+                //g_runtime_global_context.m_render_system->clearForLevelReloading();
+                //g_editor_global_context.m_scene_manager->onGObjectSelected(k_invalid_gobject_id);
+            }
+            if (ImGui::MenuItem("Save Current Level"))
+            {
+                //g_runtime_global_context.m_world_manager->saveCurrentLevel();
+            }
+            if (ImGui::BeginMenu("Debug"))
+            {
+                if (ImGui::BeginMenu("Animation"))
+                {
+                    if (ImGui::MenuItem("show skeleton"))
+                    {
+                        //g_runtime_global_context.m_render_debug_config->animation.show_skeleton = !g_runtime_global_context.m_render_debug_config->animation.show_skeleton;
+                    }
+                    if (ImGui::MenuItem("show bone name"))
+                    {
+                        //g_runtime_global_context.m_render_debug_config->animation.show_bone_name = !g_runtime_global_context.m_render_debug_config->animation.show_bone_name;
+                    }
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Camera"))
+                {
+                    if (ImGui::MenuItem("show runtime info"))
+                    {
+                        //g_runtime_global_context.m_render_debug_config->camera.show_runtime_info = !g_runtime_global_context.m_render_debug_config->camera.show_runtime_info;
+                    }
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Game Object"))
+                {
+                    if (ImGui::MenuItem("show bounding box"))
+                    {
+                        //g_runtime_global_context.m_render_debug_config->gameObject.show_bounding_box = !g_runtime_global_context.m_render_debug_config->gameObject.show_bounding_box;
+                    }
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::MenuItem("Exit"))
+            {
+                //g_editor_global_context.m_engine_runtime->shutdownEngine();
+                exit(0);
+            }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Window"))
+        {
+            ImGui::MenuItem("World Objects", nullptr, &m_asset_window_open);
+            ImGui::MenuItem("Game", nullptr, &m_game_engine_window_open);
+            ImGui::MenuItem("File Content", nullptr, &m_file_content_window_open);
+            //ImGui::MenuItem("Detail", nullptr, &m_detail_window_open);
+            ImGui::EndMenu();
+        }
+        ImGui::EndMenuBar();
+    }
+
+    ImGui::End();
+
+}
+
+void EditorUI::showEditorWorldObjectsWindow(bool* opened)
+{
+
+}
+
+void EditorUI::showEditorGameWindow(bool* opened)
+{
+
+}
+
 
 // Main code
 int main(int, char**)
@@ -122,6 +294,7 @@ int main(int, char**)
     bool show_demo_window = true;
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    EditorUI ui;
 
     // Main loop
 #ifdef __EMSCRIPTEN__
@@ -150,7 +323,7 @@ int main(int, char**)
             ImGui::ShowDemoWindow(&show_demo_window);
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
-        {
+        if(false){
             static float f = 0.0f;
             static int counter = 0;
 
@@ -173,7 +346,7 @@ int main(int, char**)
         }
 
         // 3. Show another simple window.
-        if (show_another_window)
+        if (false && show_another_window)
         {
             ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
             ImGui::Text("Hello from another window!");
@@ -181,6 +354,8 @@ int main(int, char**)
                 show_another_window = false;
             ImGui::End();
         }
+
+        ui.render();
 
         // Rendering
         ImGui::Render();
